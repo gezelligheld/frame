@@ -1,4 +1,5 @@
 #### 使用
+
 - 让函数组件拥有state状态值和更新state的函数
 
 ```js
@@ -52,7 +53,7 @@ function useState(initialState) {
 }
 ```
 
-但是并不满足，函数组件在初始化、状态变更时需要重新执行useState，所以需要一个数据结构存储保存上一次和这一次的state，以便调用获取到正确的state
+但是并不满足，为了在函数组件在初始化、状态变更时调用useState可以获取到正确的值，需要一个数据结构存储上一次和这一次的state
 
 ```js
 type Hook = {
@@ -162,6 +163,7 @@ function mountState(initialState){
     
     //通过闭包的方式，实现队列在不同函数中的共享。前提是每次用的dispatch函数是同一个
     const dispatch = dispatchAction.bind(null, queue);
+    queue.dispath = dispatch;
     return [hook.memoizedState, dispatch]
 }
 
@@ -198,5 +200,21 @@ function updateState(initialState){
     })();
      
     return [hook.memoizedState, hook.queue.dispatch];
+}
+```
+
+#### 模拟实现
+
+```js
+let index = 0;
+const states = [];
+
+function useState(initialState) {
+    states[index] = states[index] || initialState;
+    function dispatch(newState) {
+        states[index] = newState;
+    }
+    index ++;
+    return [states[index], dispatch];
 }
 ```
