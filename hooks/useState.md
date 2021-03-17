@@ -218,3 +218,6 @@ function useState(initialState) {
     return [states[index], dispatch];
 }
 ```
+
+ 参考文档：
+1. [手写简单的useState/useEffect](https://zhuanlan.zhihu.com/p/265662126)
