@@ -17,7 +17,7 @@ ReactDOM.render(
 
 ```js
 import React from 'react'
-import {connect}from 'react-redux'
+import {connect} from 'react-redux'
 import  Style from './index.module.less'
 class Son1 extends React.Component{
   render(){
