@@ -219,5 +219,5 @@ function useState(initialState) {
 }
 ```
 
- 参考文档：
+参考文档：
 1. [手写简单的useState/useEffect](https://zhuanlan.zhihu.com/p/265662126)

@@ -148,7 +148,7 @@ function connect(mapStateToProps, mapDispatchToProps, mergeProps, option = {}){
                 return (
                     <WrappedComponent
                         {...this.state}
-                        {...mapDispatchToProps(this.store.dispatch, props)}
+                        {...mapDispatchToProps(this.store.dispatch, this.props)}
                     />
                 );
             }
