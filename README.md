@@ -1,14 +1,12 @@
 # react 总结
 
-- class 类组件相关
+- basic 基础
 
-- hooks hook相关
+- optimization 优化
 
-- redux
+- deep 原理
 
-- common 通用
-
-- source 源码解析
+- ecology 生态
 
 todo
 
