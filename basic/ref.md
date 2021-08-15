@@ -381,7 +381,7 @@ export default class Index extends React.Component{
 
 为什么会这样？组件更新分为render阶段和commit阶段，对于ref的处理是在commit阶段发生的
 
-首先会在在DOM更新之前，也就是组件更新的commit阶段的mutation阶段，执行commitDetachRef，commitDetachRef会清空之前的ref，置为null
+首先会在在DOM更新之前，也就是组件更新的commit阶段的mutation阶段，执行commitDetachRef，commitDetachRef会清空之前的ref，置为null，方便垃圾回收
 
 ```js
 function commitDetachRef(current: Fiber) {
