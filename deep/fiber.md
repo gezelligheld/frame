@@ -122,3 +122,95 @@ export default class Index extends React.Component{
 一个在内存中构建，一个渲染视图，两颗树用 alternate 指针相互指向，在下一次渲染的时候，直接复用缓存树做为下一次渲染树，上一次的渲染树又作为缓存树，这样可以防止只用一颗树更新状态的丢失的情况，又加快了 DOM 节点的替换与更新，称之为双缓冲树
 
 #### reconciler调和
+
+fiber更新流程分为render阶段和commit阶段
+
+##### render阶段
+
+首先workloop会遍历一遍fiber树
+
+```js
+// react-reconciler/src/ReactFiberWorkLoop.js
+function workLoop (){
+    while (workInProgress !== null ) {
+      workInProgress = performUnitOfWork(workInProgress);
+    }
+}
+
+function performUnitOfWork(){
+    next = beginWork(current, unitOfWork, renderExpirationTime);
+    if (next === null) {
+       next = completeUnitOfWork(unitOfWork);
+    }
+}
+```
+
+其中performUnitOfWork主要做了两个事情
+
+1. beginWork
+
+向下调和的过程，由fiberRoot按照child指针逐层向下调和，期间会执行函数组件，实例类组件，及其部分生命周期，执行render，得到最新的children；diff 调和子节点；打上不同副作用标签effectTag
+
+```js
+// react-reconciler/src/ReactFiberBeginWork.js
+function beginWork(current,workInProgress){
+
+    switch(workInProgress.tag){
+       case IndeterminateComponent:{// 初始化的时候不知道是函数组件还是类组件 
+           //....
+       }
+       case FunctionComponent: {//对应函数组件
+           //....
+       }
+       case ClassComponent:{  //类组件
+           //...
+       }
+       case HostComponent:{
+           //...  
+       }
+       ...
+    }
+}
+
+function reconcileChildren(current,workInProgress){
+   if(current === null){  /* 初始化子代fiber  */
+        workInProgress.child = mountChildFibers(workInProgress,null,nextChildren,renderExpirationTime)
+   }else{  /* 更新流程，diff children将在这里进行。 */
+        workInProgress.child = reconcileChildFibers(workInProgress,current.child,nextChildren,renderExpirationTime)
+   }
+}
+```
+
+以下是常见的effectTag
+
+```js
+export const Placement = /*             */ 0b0000000000010;  // 插入节点
+export const Update = /*                */ 0b0000000000100;  // 更新fiber
+export const Deletion = /*              */ 0b0000000001000;  // 删除fiebr
+export const Snapshot = /*              */ 0b0000100000000;  // 快照
+export const Passive = /*               */ 0b0001000000000;  // useEffect的副作用
+export const Callback = /*              */ 0b0000000100000;  // setState的 callback
+export const Ref = /*                   */ 0b0000010000000;  // ref
+```
+
+2. completeUnitOfWork
+
+向上归并的过程，有兄弟节点返回兄弟节点，没有返回父级节点，直到fiberRoot
+
+首先 completeUnitOfWork 会将 effectTag 的 Fiber 节点会被保存在一条被称为 effectList 的单向链表中，在 commit 阶段将不再需要遍历每一个 fiber ，只需要执行更新 effectList 就可以了；会进行事件收集，最终统一交给根节点处理；会创建真实dom
+
+##### commit阶段
+
+这个阶段会进行componentDidMount、函数组件useEffect、useLayoutEffect的处理，还会进行节点的增删改
+
+1. Before mutation
+
+执行DOM操作前，此时DOM还没有被修改，可以获取DOM快照，getSnapshotBeforeUpdate生命周期会在这个阶段执行；异步调用了useEffect，不阻塞视图渲染
+
+2. Mutation
+
+执行DOM操作，进行DOM节点的增删改，同时置空了ref（方便垃圾回收）
+
+3. Layout
+
+执行DOM操作后，会执行类组件setState 的callback，以及函数组件的useLayoutEffect（会阻塞视图渲染）
