@@ -10,9 +10,13 @@
 
 16版本后采用了新的调度方式，react实现了一套自己的调度方式，更新任务可以分成很多小部分，甚至可以中断，以一个fiber作为最小的工作单元执行完毕后，都会去查看是否还继续拥有主线程时间片，如果有继续执行下一个fiber的更新任务，没有则进行其他高优的任务，等主线程进入空闲时间后再继续
 
+Scheduler作为react中一个独立的包，承担着任务调度的职责，只需要将任务优先级和任务提交给它，就可以帮助管理任务
+
 #### 时间分片
 
 浏览器每次执行一次事件循环（一帧）都会做如下事情：处理事件，执行 js ，调用 requestAnimation ，布局 Layout ，绘制 Paint ，在一帧执行后，如果没有其他事件，那么浏览器会进入空闲时间，那么有的一些不是特别紧急 React 更新，就可以执行了
+
+时间分片规定的是单个任务在这一帧内最大的执行时间，任务一旦执行时间超过时间片，则会被打断，有节制地执行任务。这样可以保证页面不会因为任务连续执行的时间过长而产生卡顿
 
 浏览器提供的requestIdleCallback，当进入空闲时间后，触发其回调
 
@@ -94,3 +98,5 @@ let scheduledHostCallback = null
 在一次更新任务中，react调用requestHostCallback，port2项port1发起消息通知，port1的onmessage触发，执行异步更新任务
 
 #### 调度流程
+
+1. [react concurrent](https://zhuanlan.zhihu.com/p/60307571?utm_source=tuicool)
