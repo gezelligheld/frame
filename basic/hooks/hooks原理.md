@@ -302,3 +302,6 @@ function updateMemo(nextCreate,deps){
     return nextValue;
 }
 ```
+
+参考：
+1. [复盘react hook的创造过程](https://github.com/shanggqm/blog/issues/4)
