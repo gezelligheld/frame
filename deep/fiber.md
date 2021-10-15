@@ -61,7 +61,6 @@ function FiberNode(){
 
   this.expirationTime = NoWork;    // 通过不同过期时间，判断任务是否过期， 在v17版本用lane表示。
 
-  this.alternate = null;           //双缓存树，指向缓存的fiber。更新阶段，两颗树互相交替。
 }
 ```
 
