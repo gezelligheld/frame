@@ -327,3 +327,7 @@ function schedulePassiveEffects(finishedWork: Fiber) {
 ```
 
 > useLayoutEffect 是在 commit 阶段同步执行，useEffect 会在 commit 阶段异步调度
+
+参考
+
+1. [react 源码解析 10.commit 阶段](https://xiaochen1024.com/courseware/60b1b2f6cf10a4003b634718/60b1b360cf10a4003b634722)
