@@ -100,8 +100,6 @@ function unstable_runWithPriority(priorityLevel, eventHandler) {
 
 以一个优先级注册 callback，在适当的时机执行，因为涉及过期时间的计算，所以 scheduleCallback 比 runWithPriority 的粒度更细。在这个函数中，优先级意味着过期时间，优先级越高 priorityLevel 就越小，过期时间离当前时间就越近
 
-调度的过程用到了小顶堆，可以在 O(1)的复杂度找到优先级最高的 task
-
 未过期任务 task 存放在 timerQueue 中，过期任务存放在 taskQueue 中，timerQueue 中的任务如果过期了会加入 taskQueue 中
 
 ```js
@@ -181,6 +179,90 @@ function unstable_scheduleCallback(priorityLevel, callback, options) {
   }
 
   return newTask;
+}
+```
+
+调度的过程用到了小顶堆，可以在 O(1)的复杂度找到优先级最高的 task。小顶堆的特点是每一个父节点都比它的两个子节点小，第一个节点是最小的
+
+- 每次 peek 时，获取小顶堆的第一个任务，即优先级最高的任务
+
+- 每次 push 时，将 push 的这个节点与父节点比较，如果父节点较大则交换位置，否则退出循环
+
+```js
+function push(heap: Heap, node: Node): void {
+  const index = heap.length;
+  heap.push(node);
+  siftUp(heap, node, index);
+}
+function siftUp(heap, node, i) {
+  let index = i;
+  while (index > 0) {
+    const parentIndex = (index - 1) >>> 1;
+    const parent = heap[parentIndex];
+    if (compare(parent, node) > 0) {
+      // The parent is larger. Swap positions.
+      heap[parentIndex] = node;
+      heap[index] = parent;
+      index = parentIndex;
+    } else {
+      // The parent is smaller. Exit.
+      return;
+    }
+  }
+}
+// 优先比较任务优先级，其次比较插入顺序
+function compare(a, b) {
+  // Compare sort index first, then task id.
+  const diff = a.sortIndex - b.sortIndex;
+  return diff !== 0 ? diff : a.id - b.id;
+}
+```
+
+- 每次 pop 时，pop 的实际是优先级最高的任务，然后再重新排序
+
+```js
+function pop(heap: Heap): Node | null {
+  if (heap.length === 0) {
+    return null;
+  }
+  const first = heap[0];
+  const last = heap.pop();
+  if (last !== first) {
+    heap[0] = last;
+    siftDown(heap, last, 0);
+  }
+  return first;
+}
+function siftDown(heap, node, i) {
+  let index = i;
+  const length = heap.length;
+  const halfLength = length >>> 1;
+  while (index < halfLength) {
+    const leftIndex = (index + 1) * 2 - 1;
+    const left = heap[leftIndex];
+    const rightIndex = leftIndex + 1;
+    const right = heap[rightIndex];
+
+    // If the left or right node is smaller, swap with the smaller of those.
+    if (compare(left, node) < 0) {
+      if (rightIndex < length && compare(right, left) < 0) {
+        heap[index] = right;
+        heap[rightIndex] = node;
+        index = rightIndex;
+      } else {
+        heap[index] = left;
+        heap[leftIndex] = node;
+        index = leftIndex;
+      }
+    } else if (rightIndex < length && compare(right, node) < 0) {
+      heap[index] = right;
+      heap[rightIndex] = node;
+      index = rightIndex;
+    } else {
+      // Neither child is smaller. Exit.
+      return;
+    }
+  }
 }
 ```
 
