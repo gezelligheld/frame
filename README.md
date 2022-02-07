@@ -10,8 +10,4 @@ todo
 
 - react-router
 
-- concurrent
-
-- hook
-
 - mobx
