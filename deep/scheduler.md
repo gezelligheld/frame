@@ -12,6 +12,10 @@
 
 Scheduler 作为 react 中一个独立的包，承担着任务调度的职责，只需要将任务优先级和任务提交给它，就可以帮助管理任务
 
+#### Concurrent 模式独有
+
+在 Legacy 模式下，没有额外的调度处理和优先级之分，会按顺序处理多个更新任务，直接进入调和流程，这样容易造成浏览器卡顿；Concurrent 模式下，会优先处理优先级较高的任务，如果在执行调和 render 阶段时出现了更高优先级的任务就会打断当前任务，而去执行该任务
+
 #### 时间分片
 
 浏览器每次执行一次事件循环（一帧）都会做如下事情：处理事件，执行 js ，调用 requestAnimation ，布局 Layout ，绘制 Paint ，在一帧执行后，如果没有其他事件，那么浏览器会进入空闲时间，那么有的一些不是特别紧急 React 更新，就可以执行了
@@ -262,6 +266,73 @@ function siftDown(heap, node, i) {
       // Neither child is smaller. Exit.
       return;
     }
+  }
+}
+```
+
+#### 调度流程
+
+ReactDOM.render、setState、useState 都会执行 scheduleUpdateOnFiber，可以将其看作一个更新入口。初始化时会直接执行 performSyncWorkOnRoot 进入调和流程，使用 setState/useState 时会执行 ensureRootIsScheduled 进入调度流程
+
+```js
+export function scheduleUpdateOnFiber(fiber, lane, eventTime) {
+  if (lane === SyncLane) {
+    if (
+      (executionContext & LegacyUnbatchedContext) !== NoContext && // unbatch 情况，比如初始化
+      (executionContext & (RenderContext | CommitContext)) === NoContext
+    ) {
+      /* 开始同步更新，进入到 调和 流程 */
+      performSyncWorkOnRoot(root);
+    } else {
+      /* 进入调度，把任务放入调度中 */
+      ensureRootIsScheduled(root, eventTime);
+      if (executionContext === NoContext) {
+        /* 当前的执行任务类型为 NoContext ，说明当前任务是非可控的，那么会调用 flushSyncCallbackQueue 方法。 */
+        flushSyncCallbackQueue();
+      }
+    }
+  }
+}
+```
+
+legacy 模式下，宏队列和微队列中的更新任务不会处理为批量更新，原因在于，对于 react 系统中的事件都会标识为相应的上下文，也就是说 executionContext 不为 NoContext，但宏队列和微队列中的更新任务无法控制其执行时机，就会直接触发 flushSyncCallbackQueue 执行更新队列中的任务，直接进入调和流程
+
+进入调度流程后，如果最新的调度更新优先级和当前 root 的优先级一样，则退出调度流程，否则将当前更新任务放入执行队列，然后依次通过 MessageChannel 请求空闲帧从而执行队列中的任务，
+
+```js
+function ensureRootIsScheduled(root, currentTime) {
+  /* 计算一下执行更新的优先级 */
+  var newCallbackPriority = returnNextLanesPriority();
+  /* 当前 root 上存在的更新优先级 */
+  const existingCallbackPriority = root.callbackPriority;
+  /* 如果两者相等，那么说明是在一次更新中，那么将退出 */
+  if (existingCallbackPriority === newCallbackPriority) {
+    return;
+  }
+  if (newCallbackPriority === SyncLanePriority) {
+    /* 在正常情况下，会直接进入到调度任务中。 */
+    newCallbackNode = scheduleSyncCallback(
+      performSyncWorkOnRoot.bind(null, root)
+    );
+  } else {
+    /* 这里先忽略 */
+  }
+  /* 给当前 root 的更新优先级，绑定到最新的优先级  */
+  root.callbackPriority = newCallbackPriority;
+}
+
+function scheduleSyncCallback(callback) {
+  if (syncQueue === null) {
+    /* 如果队列为空 */
+    syncQueue = [callback];
+    /* 放入调度任务 */
+    immediateQueueCallbackNode = Scheduler_scheduleCallback(
+      Scheduler_ImmediatePriority,
+      flushSyncCallbackQueueImpl
+    );
+  } else {
+    /* 如果任务队列不为空，那么将任务放入队列中。 */
+    syncQueue.push(callback);
   }
 }
 ```
