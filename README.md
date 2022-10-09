@@ -40,7 +40,7 @@ jsx 是描述 dom 结构和信息的对象，让开发者从 dom 操作中解放
 
 函数组件的多个 hook 形成链表保存到组件对应的 fiber 上，按照 hook 调用的顺序去索引对应的 hook，限制了 hook 不能在 if 语句中执行，否则会由于 if 条件的变动前后索引到不同的 hook 导致错乱
 
-使函数组件拥有状态和改变状态的能力依靠 useState 和 useReducer 这两个 hook，useReducer 可以在一组关联的状态和动作下使用；useEffect 和 useLayoutEffect 可以处理副作用，它们都在 commit 阶段执行上一次的卸载函数和本次的回调函数，不同的是，useEffect 适合处理异步请求，其回调异步处理，而 useLayoutEffect 适合操作 dom，其回调同步处理，会阻塞视图渲染；useRef 和 useImperativeHandle 搭配 forwardRef 可以进行 ref 转发，将自身状态或方法抛给外部使用；useCallback 和 useMemo 可以将值和函数缓存在 fiber 上，可以减少不必要的重复 render
+使函数组件拥有状态和改变状态的能力依靠 useState 和 useReducer 这两个 hook，useReducer 可以在一组关联的状态和动作下使用；useEffect 和 useLayoutEffect 可以处理副作用，它们都在 commit 阶段执行上一次的卸载函数和本次的回调函数，不同的是，useEffect 适合处理异步请求，其回调异步处理，而 useLayoutEffect 适合操作 dom，其回调同步处理，会阻塞视图渲染；useRef 和 useImperativeHandle 搭配 forwardRef 可以进行 ref 转发，将自身状态或方法抛给外部使用；useCallback 和 useMemo 可以将值和函数缓存在 fiber 上，可以减少不必要的重复渲染
 
 ##### 事件系统（事件合成、事件触发流程、模拟捕获和冒泡）
 
@@ -52,7 +52,9 @@ jsx 是描述 dom 结构和信息的对象，让开发者从 dom 操作中解放
 
 以 60hz 的屏幕刷新率为例，一帧就是 16.6ms，浏览器在一帧内会依次处理 input 输入等的交互、requestAnimationFrame、渲染，剩余的时间就是空闲时间可以用来执行更新任务。react 内部使用 MessageChannel 捕捉这个空闲时间，这就是所谓的时间分片
 
-区别于 legacy 模式，concurrent 模式在进入调和流程之前先进行调度，优先处理高优先级任务，这里的任务其实就是某个更新周期的 render 阶段，然后获取空闲帧去执行
+区别于 legacy 模式，concurrent 模式在进入调和流程之前先进行调度，优先处理高优先级任务，这里的任务其实就是某个更新周期的 render 阶段，然后获取空闲帧去执行，而 legacy 模式会按顺序执行更新任务，没有优先级之分
+
+vue 没有时间分片的概念，每个组件对应一个监视器，在一次更新中 vue 能够快速响应，以组件的粒度更新组件
 
 ##### 17 版本调和流程
 
@@ -61,6 +63,14 @@ jsx 是描述 dom 结构和信息的对象，让开发者从 dom 操作中解放
 - render 阶段用来构建 fiber 树和生成副作用链表。初始化时，首先创建作为 react 应用根基的 fiberRoot 节点以及通过 ReactDOM.render 创建的 rootFiber 节点。正在内存中构建的 Fiber 树称为 workInProgress Fiber 树，根据 jsx 构建 workInProgress Fiber 树，最后切换成 current Fiber 树用来渲染视图；更新时，首先向下遍历 current Fiber 树，与最新的 jsx 经过 diff 算法构建 workInProgress Fiber 树，可以复用上一次渲染的节点，也可以减少 dom 操作，同时追踪副作用并打上 tag，然后向上回溯时将这些标识为带有副作用的节点添加到链表中。这样复用上一次的 current fiber 树作为缓存树生成 workInProgress 过程称为双缓冲树
 
 - commit 阶段主要用来根据 render 阶段所给的副作用链表进行 dom 节点的增删改，最终渲染到页面上
+
+其中利用 current 树和最新的 jsx 构建 workInProgress 树时，使用了 diff 算法，使用了一些策略将复杂度由 n^3 降低为 n
+
+- tree：只对同一层级的节点进行比较，如果某个节点不存在不会再处理子节点，对不同层级的节点只有删除和创建操作
+
+- component：如果遇到同一类型的组件才会进行 tree diff 和 element diff，否则只有删除和创建操作
+
+- element：同一层级的节点依赖唯一的 key 值进行位置变换，设置两个指针 lastIndex 和 nextIndex，初始都为 0，nextIndex 每次自增 1，如果节点之前的索引大于 lastIndex，则将该索引赋值给 lastIndex，否则移动该节点到 nextIndex 位置
 
 ##### 其他（context、suspense、lazy、router）
 
