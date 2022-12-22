@@ -7,7 +7,6 @@ react 组件复用，经历了 mixins -> 高阶组件 HOC -> 自定义 hook 的�
 如果想要去 class 改造函数组件的话，函数组件需要拥有和类组件一样的能力，即
 
 - class 组件可以存储实例状态，挂到 this 上，而函数组件每次执行后，状态都会被初始化
-
 - class 组件拥有 setState 方法改变状态，而函数组件没有
 
 而 hooks 的出现，使函数组件也拥有了维持状态、改变状态的能力，自定义 hook 也使得逻辑复用更加容易
@@ -19,9 +18,7 @@ react 组件复用，经历了 mixins -> 高阶组件 HOC -> 自定义 hook 的�
 hooks 对象主要有三种处理策略
 
 1. ContextOnlyDispatcher：防止在函数组件外调用 hooks，否则抛出异常
-
 2. HooksDispatcherOnMount：函数组件初始化时，初始化 hooks，建立起其 fiber 和 hooks 的关系
-
 3. HooksDispatcherOnUpdate：函数组件更新时，需要 hooks 去获取或更新状态
 
 ```js
@@ -174,7 +171,6 @@ function updateReducer<S, I, A>(
 每次使用 useState 和 useReducer 改变 state，其实调用的是 dispatchAction
 
 - 首先创建一个 update，将其放入待更新的队列 pending 中
-
 - 当前 fiber 没有更新任务时，将这一次的 state 和上一次的 state 进行浅比较，如果相同退出更新，否则发起更新调度任务
 
 ```js
