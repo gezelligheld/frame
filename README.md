@@ -16,10 +16,6 @@ jsx 是描述 dom 结构和信息的对象，让开发者从 dom 操作中解放
 
 不管是 useState 还是 setState，在异步回调中执行时会打破批量更新的规则，变成了同步的过程，执行一次 useState/setState 就会触发一次调和更新。区别在于，setState 执行完毕后会在回调中拿到最新的值，且每调用一次就会发起更新流程；而 useState 会做浅比较，一个更新周期结束后才能拿到最新的值
 
-##### props（render props、插槽组件、React.Children）
-
-##### ref（ref 转发、缓存数据、获取 dom）
-
 ##### 生命周期
 
 - 初始化时，首先执行 constructor，可以初始化 state 等操作，然后如果有 getDriviedStateFromProps 就执行它，用来将接收到的 props 派生成 state 添加到当前组件实例中，否则执行 componentWillMount。然后执行 render 函数，触发 render 流程，到了 commit 流程时触发 componentDidMount，用来处理啊副作用
@@ -40,11 +36,16 @@ jsx 是描述 dom 结构和信息的对象，让开发者从 dom 操作中解放
 
 ##### hooks
 
-16.8 版本之前函数组件是无状态的，类组件状态难以复用，逻辑难以分离，借助高阶组件需要嵌套，比较难以维护；之后 hook 的出现使得函数组件拥有了状态和改变状态的能力，自定义 hook 使得状态复用和逻辑分离变得轻易起来
+- 设计缘由：16.8 版本之前函数组件是无状态的，类组件状态难以复用，逻辑难以分离，借助高阶组件需要嵌套，比较难以维护；之后 hook 的出现使得函数组件拥有了状态和改变状态的能力，自定义 hook 使得状态复用和逻辑分离变得轻易起来
 
-函数组件的多个 hook 形成链表保存到组件对应的 fiber 上，按照 hook 调用的顺序去索引对应的 hook，限制了 hook 不能在 if 语句中执行，否则会由于 if 条件的变动前后索引到不同的 hook 导致错乱
+- 为什么不能在条件语句执行 hooks：函数组件的多个 hook 形成链表保存到组件对应的 fiber 上，按照 hook 调用的顺序去索引对应的 hook，限制了 hook 不能在 if 语句中执行，否则会由于 if 条件的变动前后索引到不同的 hook 导致错乱
 
-使函数组件拥有状态和改变状态的能力依靠 useState 和 useReducer 这两个 hook，useReducer 可以在一组关联的状态和动作下使用；useEffect 和 useLayoutEffect 可以处理副作用，它们都在 commit 阶段执行上一次的卸载函数和本次的回调函数，不同的是，useEffect 适合处理异步请求，其回调异步处理，而 useLayoutEffect 适合操作 dom，其回调同步处理，会阻塞视图渲染；useRef 和 useImperativeHandle 搭配 forwardRef 可以进行 ref 转发，将自身状态或方法抛给外部使用；useCallback 和 useMemo 可以将值和函数缓存在 fiber 上，可以减少不必要的重复渲染
+- 常用 hooks
+  - 使函数组件拥有状态和改变状态的能力依靠 useState 和 useReducer，useReducer 可以在一组关联的状态和动作下使用，相当于一个小型的 redux
+  - useEffect 和 useLayoutEffect 可以处理副作用，它们都在 commit 阶段执行上一次的卸载函数和本次的回调函数，不同的是，useEffect 适合处理异步请求，其回调异步处理，而 useLayoutEffect 适合操作 dom，其回调同步处理，会阻塞视图渲染
+  - useRef 和 useImperativeHandle 搭配 forwardRef 可以进行 ref 转发，将自身状态或方法抛给外部使用
+  - useCallback 和 useMemo 可以将值和函数缓存在 fiber 上，可以减少不必要的重复渲染
+  - 当需要将状态分发到多个子组件，或防止某个状态层层传递，利用 useContext 创建上下文
 
 ##### 事件系统
 
