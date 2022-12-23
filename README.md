@@ -30,11 +30,15 @@ jsx 是描述 dom 结构和信息的对象，让开发者从 dom 操作中解放
 
 > componentWillMount、componentWillReceiveProp、componentWilUpdate 都被打上了 unsafe 的标志，原因是这些生命周期是在 render 之前执行的，可能会执行多次
 
-##### 渲染优化策略（useMemo、shouldComponentUpdate、PureComponent、memo）
+##### 渲染优化策略
 
-除了 react 自身做了大量渲染优化策略外，如批量更新、时间分片、diff 算法，开发者主要可以做两方面的优化：父组件阻止子组件重新渲染和子组件阻止自身重新渲染。主要策略如下：当父组件状态更新，如果缓存了 element 对象，则子组件不进入更新流程，否则继续向下调和子节点，当采用了 memo 就会对 props 做浅比较。如果是函数组件，可以使用 PureComponent 对 props 做浅比较，使用 shouldComponentUpdate 决定是否进行更新
+除了 react 自身做了大量渲染优化策略外，如批量更新、时间分片、diff 算法，开发者主要可以做两方面的优化
 
-##### hook（设计初衷、常用 hook、函数组件生命周期替代、自定义 hook、hook 原理、useEffect 和 useLayoutEffect 异同）
+- 父组件更新时减少子组件重新渲染：当父组件状态更新，如果缓存了 element 对象，则子组件不进入更新流程；采用 memo 对 props 做浅比较，并将作为 props 或 context 传递的值或函数用 useMemo 或 useCallback 包裹，以减少子组件重复渲染
+
+- 子组件更新时减少自身重新渲染：如果是类组件，可以使用 PureComponent 对 props 做浅比较，使用 shouldComponentUpdate 决定是否进行更新；尽量少的定义 state，优先派生状态；一些无需触发视图更新的值可以用 useRef 定义
+
+##### hooks
 
 16.8 版本之前函数组件是无状态的，类组件状态难以复用，逻辑难以分离，借助高阶组件需要嵌套，比较难以维护；之后 hook 的出现使得函数组件拥有了状态和改变状态的能力，自定义 hook 使得状态复用和逻辑分离变得轻易起来
 
@@ -42,11 +46,11 @@ jsx 是描述 dom 结构和信息的对象，让开发者从 dom 操作中解放
 
 使函数组件拥有状态和改变状态的能力依靠 useState 和 useReducer 这两个 hook，useReducer 可以在一组关联的状态和动作下使用；useEffect 和 useLayoutEffect 可以处理副作用，它们都在 commit 阶段执行上一次的卸载函数和本次的回调函数，不同的是，useEffect 适合处理异步请求，其回调异步处理，而 useLayoutEffect 适合操作 dom，其回调同步处理，会阻塞视图渲染；useRef 和 useImperativeHandle 搭配 forwardRef 可以进行 ref 转发，将自身状态或方法抛给外部使用；useCallback 和 useMemo 可以将值和函数缓存在 fiber 上，可以减少不必要的重复渲染
 
-##### 事件系统（事件合成、事件触发流程、模拟捕获和冒泡）
+##### 事件系统
 
 为了兼容不同的浏览器和方便统一管理，react 有自己的一套事件系统。元素上绑定的事件最终都绑定到了 app 容器上，react 事件可能是多个原生事件合成的事件，当遍历 fiber 树的时候，会将捕获阶段的事件添加到数组头部，冒泡阶段的事件添加到数组尾部，直到顶层元素，然后依次执行
 
-##### concurrent（fiber、Scheduler 时间分片、调度优先级、更新任务的暂停和继续）
+##### concurrent
 
 16 版本之前当状态变更的时候，会从根节点开始递归更新，如果项目比较复杂这一过程会比较耗时；fiber 的出现使得更新任务可以拆分，不至于长时间阻塞 GUI 渲染线程造成页面卡顿，可以在浏览器空闲时间执行更新任务。高优先级任务可以打断低优先级任务，让页面在繁重的更新流程下也能保持良好的交互
 
@@ -74,8 +78,16 @@ jsx 是描述 dom 结构和信息的对象，让开发者从 dom 操作中解放
 
 ##### 其他（context、suspense、lazy、router）
 
-##### 状态管理（redux 工作流程、原理、中间件，mobx，差别和适用场景）
+##### 状态管理
 
-- redux：基于发布订阅，会创建一个表示状态信息的 store，可以通过 dispatch 修改 store，ui 组件可以通过 subscribe 订阅 store 的变化。默认只支持同步修改 store，可以通过 redux-thunk 等中间件增强 dispatch，使其可以处理其他副作用。redux 一般适用于大型项目，由于 store 全局唯一并且使用纯函数修改状态使得方便调试和时间旅行，但是需要书写太多模板代码
+- redux：基于发布订阅，会创建一个表示状态信息的 store，可以通过 dispatch 发出 action，然后通过纯函数 reducer 修改 store，ui 组件中可以通过 subscribe 订阅 store 的变化。默认只支持同步修改 store，可以通过 redux-thunk 等中间件增强 dispatch，使其可以处理其他副作用。redux 一般适用于大型项目，由于 store 全局唯一并且使用纯函数修改状态使得方便调试和时间旅行，但是需要书写太多模板代码
 
 - mobx：基于观察者模式，使用 observable 给属性绑定状态，这些属性就是观察者，实例化的时候执行了 makeObservable 建立响应式，内部创建了一个观察者管理者，遍历观察者属性依次使用 Object.defineProperty 设置为访问器属性，触发 set 时收集依赖，触发 get 时通知依赖作出相应动作。mobx 适合小型项目的全局状态管理，使用起来比较简单，但不方便时间旅行，数据流向比较多样。mobx 更适合接管局部的状态，利用面向对象的方式将业务逻辑和视图分离
+
+##### react18
+
+- concurrent 模式正式上线
+- transition：标记为过渡更新任务，降低了更新优先级，用于一些不急迫的更新
+- suspense 新特性
+  - SuspenseList：用来控制多个 Suspense 异步组件的显示顺序
+  - Streaming SSR：以 Suspense 为界限支持分段传输 HTML 到浏览器；对于已完成渲染的区域就可以执行 js 逻辑注入，而无需等待所有区域和代码加载完毕

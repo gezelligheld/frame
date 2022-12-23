@@ -67,7 +67,3 @@ function ensureRootIsScheduled(root: FiberRoot, currentTime: number) {
   //...
 }
 ```
-
-#### Suspense
-
-Suspense 可以在请求数据的时候显示 pending 状态，请求成功后展示数据，原因是因为 Suspense 中组件的优先级很低，而离屏的 fallback 组件优先级高，当 Suspense 中组件 resolve 之后就会重新调度一次 render 阶段去渲染已经准备好的数据
