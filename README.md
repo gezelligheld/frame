@@ -79,8 +79,6 @@ jsx 是描述 dom 结构和信息的对象，让开发者从 dom 操作中解放
 
 - element：同一层级的节点依赖唯一的 key 值进行位置变换，设置两个指针 lastIndex 和 nextIndex，初始都为 0，nextIndex 每次自增 1，如果节点之前的索引大于 lastIndex，则将该索引赋值给 lastIndex，否则移动该节点到 nextIndex 位置
 
-##### 其他（context、suspense、lazy、router）
-
 ##### 状态管理
 
 - redux：基于发布订阅，会创建一个表示状态信息的 store，可以通过 dispatch 发出 action，然后通过纯函数 reducer 修改 store，ui 组件中可以通过 subscribe 订阅 store 的变化。默认只支持同步修改 store，可以通过 redux-thunk 等中间件增强 dispatch，使其可以处理其他副作用。redux 一般适用于大型项目，由于 store 全局唯一并且使用纯函数修改状态使得方便调试和时间旅行，但是需要书写太多模板代码
