@@ -1,14 +1,14 @@
 # 框架
 
-#### react
-
-##### react vs vue
+#### react vs vue
 
 - 数据模型不同。react 最多算是一个 MV 架构，通过状态驱动视图，强调数据不可变性（immutability），如果一个引用类型的变化想引起rerender，需要改变其引用；vue 是 MVVM 架构，通过 Proxy 作数据劫持实现数据绑定，内部实现了 ViewModel
 
 - 更新渲染的逻辑不同。vue 每个组件都有一个监视器，以组件的粒度更新视图；react 会遍历整个 fiber 树，找到其中的副作用然后再更新视图，concurrent 模式下捕捉浏览器每一帧中的空闲时间执行更新任务，防止 js 执行太久造成页面卡顿
 
 - 生态不同。vue 的路由库和状态管理库都由官方维护支持，react 则将这些问题交给社区，因此 react 的社区生态比 vue 更加繁荣一些，这也就需要 react 项目的规范需要更完善一些，防止一个项目内不同开发人员代码风格差异过大，难以维护
+
+#### react
 
 ##### jsx
 
@@ -20,7 +20,7 @@ jsx 是描述 dom 结构和信息的对象，让开发者从 dom 操作中解放
 
 ##### 生命周期
 
-- 初始化时，首先执行 constructor，可以初始化 state 等操作，然后如果有 getDriviedStateFromProps 就执行它，用来将接收到的 props 派生成 state 添加到当前组件实例中，否则执行 componentWillMount。然后执行 render 函数，触发 render 流程，到了 commit 流程时触发 componentDidMount，用来处理啊副作用
+- 初始化时，首先执行 constructor，可以初始化 state 等操作，然后如果有 getDriviedStateFromProps 就执行它，用来将接收到的 props 派生成 state 添加到当前组件实例中，否则执行 componentWillMount。然后执行 render 函数，触发 render 流程，到了 commit 流程时触发 componentDidMount，用来处理副作用
 
 - 更新时，如果是 props 引起的更新，如果有 getDerivedStateFromProps 触发其派生出新的状态，否则触发 componentWillReceiveProps。然后执行 shouldComponentUpdate，如果返回 false 则停止本次更新流程，否则继续更新流程。然后触发 componentWilUpdate，执行 render 函数，触发 render 流程，到了 commit 阶段触发 componentDidUpdate
 
@@ -53,17 +53,7 @@ jsx 是描述 dom 结构和信息的对象，让开发者从 dom 操作中解放
 
 为了兼容不同的浏览器和方便统一管理，react 有自己的一套事件系统。元素上绑定的事件最终都绑定到了 app 容器上，react 事件可能是多个原生事件合成的事件，当遍历 fiber 树的时候，会将捕获阶段的事件添加到数组头部，冒泡阶段的事件添加到数组尾部，直到顶层元素，然后依次执行
 
-##### concurrent
-
-16 版本之前当状态变更的时候，会从根节点开始递归更新，如果项目比较复杂这一过程会比较耗时；fiber 的出现使得更新任务可以拆分，不至于长时间阻塞 GUI 渲染线程造成页面卡顿，可以在浏览器空闲时间执行更新任务。高优先级任务可以打断低优先级任务，让页面在繁重的更新流程下也能保持良好的交互
-
-以 60hz 的屏幕刷新率为例，一帧就是 16.6ms，浏览器在一帧内会依次处理 input 输入等的交互、requestAnimationFrame、渲染，剩余的时间就是空闲时间可以用来执行更新任务。react 内部使用 MessageChannel 捕捉这个空闲时间，这就是所谓的时间分片
-
-区别于 legacy 模式，concurrent 模式在进入调和流程之前先进行调度，优先处理高优先级任务，这里的任务其实就是某个更新周期的 render 阶段，然后获取空闲帧去执行，而 legacy 模式会按顺序执行更新任务，没有优先级之分
-
-> vue 没有时间分片的概念，每个组件对应一个监视器，在一次更新中 vue 能够快速响应，以组件的粒度更新组件
-
-##### 17 版本调和流程
+##### render机制（v17）
 
 更新 fiber 并最终修改页面的过程称为调和，主要分为以下两个阶段
 
@@ -79,6 +69,16 @@ jsx 是描述 dom 结构和信息的对象，让开发者从 dom 操作中解放
 
 - element：同一层级的节点依赖唯一的 key 值进行位置变换，设置两个指针 lastIndex 和 nextIndex，初始都为 0，nextIndex 每次自增 1，如果节点之前的索引大于 lastIndex，则将该索引赋值给 lastIndex，否则移动该节点到 nextIndex 位置
 
+##### concurrent
+
+16 版本之前当状态变更的时候，会从根节点开始递归更新，如果项目比较复杂这一过程会比较耗时；fiber 的出现使得更新任务可以拆分，不至于长时间阻塞 GUI 渲染线程造成页面卡顿，可以在浏览器空闲时间执行更新任务。高优先级任务可以打断低优先级任务，让页面在繁重的更新流程下也能保持良好的交互
+
+以 60hz 的屏幕刷新率为例，一帧就是 16.6ms，浏览器在一帧内会依次处理 input 输入等的交互、requestAnimationFrame、渲染，剩余的时间就是空闲时间可以用来执行更新任务。react 内部使用 MessageChannel 捕捉这个空闲时间，这就是所谓的时间分片
+
+区别于 legacy 模式，concurrent 模式在进入调和流程之前先进行调度，优先处理高优先级任务，这里的任务其实就是某个更新周期的 render 阶段，然后获取空闲帧去执行，而 legacy 模式会按顺序执行更新任务，没有优先级之分
+
+> vue 没有时间分片的概念，每个组件对应一个监视器，在一次更新中 vue 能够快速响应，以组件的粒度更新组件
+
 ##### 状态管理
 
 - redux：基于发布订阅，会创建一个表示状态信息的 store，可以通过 dispatch 发出 action，然后通过纯函数 reducer 修改 store，ui 组件中可以通过 subscribe 订阅 store 的变化。默认只支持同步修改 store，可以通过 redux-thunk 等中间件增强 dispatch，使其可以处理其他副作用。redux 一般适用于大型项目，由于 store 全局唯一并且使用纯函数修改状态使得方便调试和时间旅行，但是需要书写太多模板代码
@@ -92,3 +92,5 @@ jsx 是描述 dom 结构和信息的对象，让开发者从 dom 操作中解放
 - suspense 新特性
   - SuspenseList：用来控制多个 Suspense 异步组件的显示顺序
   - Streaming SSR：以 Suspense 为界限支持分段传输 HTML 到浏览器；对于已完成渲染的区域就可以执行 js 逻辑注入，而无需等待所有区域和代码加载完毕
+
+#### vue
