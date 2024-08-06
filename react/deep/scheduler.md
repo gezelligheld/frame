@@ -360,5 +360,12 @@ if (currentTime >= deadline) {
 }
 ```
 
+当更高优先级的渲染任务到来时 React 在此时会执行以下操作
+
+1. 记录中断位置并中断当前渲染任务，及时响应高优先级任务
+2. 回滚到之前的状态，React 使用 alternate 指针回滚到之前的状态，恢复之前更新的 Fiber 树
+3. 当高优先级任务执行完毕后，React 会重新调度被中断的渲染任务，并从中断位置继续渲染
+
 1. [react concurrent](https://zhuanlan.zhihu.com/p/60307571?utm_source=tuicool)
 2. [react 源码解析 15.scheduler&Lane](https://xiaochen1024.com/courseware/60b1b2f6cf10a4003b634718/60b1b556cf10a4003b634727)
+3. [某大厂一面: 讲讲 Fiber 架构以及它是如何实现增量渲染的🥱🥱🥱](https://juejin.cn/post/7258881840823844920)
